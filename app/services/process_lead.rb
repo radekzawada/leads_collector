@@ -40,20 +40,20 @@ class ProcessLead
   end
 
   def raw_attributes
-    attributes.slice(:source, :group_name, :post_url, :post_text, :posted_at)
+    attributes.slice(:source, :group_name, :post_url, :post_text, :posted_at, :date_from, :date_to)
   end
 
   def apply_extraction(lead)
     extraction = LeadExtractor.call(post_text: lead.post_text)
+    confidence = extraction[:confidence]
+    confidence += 0.25 if attributes[:date_from].present? && attributes[:date_to].present?
     lead.update!(
       is_lead: extraction[:is_lead],
-      date_from: extraction[:date_from],
-      date_to: extraction[:date_to],
       adults: extraction[:adults],
       children: extraction[:children],
       guests_total: extraction[:guests_total],
       location: extraction[:location],
-      confidence: extraction[:confidence],
+      confidence: [ confidence, 1.0 ].min.round(4),
       raw_extraction: extraction[:raw]
     )
   rescue StandardError => e

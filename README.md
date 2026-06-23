@@ -52,6 +52,8 @@ POST /api/leads
 Content-Type: application/json
 ```
 
+Optional fields: `date_from`, `date_to` (ISO 8601 date strings, e.g. `"2026-07-07"`). When both are provided, iCal availability is checked before notifying. When omitted, the lead is still saved and notified without an availability check.
+
 Example:
 
 ```bash
@@ -62,8 +64,10 @@ curl -X POST http://localhost:3000/api/leads \
     "source": "facebook",
     "group_name": "Noclegi Karkonosze",
     "post_url": "https://facebook.com/...",
-    "post_text": "Szukam noclegu dla 2+2 od 15 do 18 sierpnia w Szklarskiej Porębie",
-    "posted_at": "2026-06-23T10:30:00+02:00"
+    "post_text": "Szukam noclegu dla 2+2 w Szklarskiej Porębie",
+    "posted_at": "2026-06-23T10:30:00+02:00",
+    "date_from": "2026-07-07",
+    "date_to": "2026-07-10"
   }'
 ```
 

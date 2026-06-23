@@ -10,8 +10,6 @@ RSpec.describe LeadExtractor do
       end
 
       it { expect(call[:is_lead]).to be(true) }
-      it { expect(call[:date_from]).to eq(Date.new(2026, 8, 15)) }
-      it { expect(call[:date_to]).to eq(Date.new(2026, 8, 18)) }
       it { expect(call[:adults]).to eq(2) }
       it { expect(call[:children]).to eq(2) }
       it { expect(call[:guests_total]).to eq(4) }
@@ -23,8 +21,6 @@ RSpec.describe LeadExtractor do
       let(:post_text) { "Sprzedam rower górski w dobrym stanie" }
 
       it { expect(call[:is_lead]).to be(false) }
-      it { expect(call[:date_from]).to be_nil }
-      it { expect(call[:date_to]).to be_nil }
     end
   end
 end

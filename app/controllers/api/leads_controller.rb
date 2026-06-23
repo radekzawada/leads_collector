@@ -8,7 +8,7 @@ class Api::LeadsController < ApplicationController
   private
 
   def lead_params
-    params.permit(:source, :group_name, :post_url, :post_text, :posted_at)
+    params.permit(:source, :group_name, :post_url, :post_text, :posted_at, :date_from, :date_to)
   end
 
   def lead_json(lead)
