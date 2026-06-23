@@ -16,6 +16,7 @@ Copy `.env.example` to `.env` and set:
 - `TELEGRAM_BOT_TOKEN` – Telegram bot token
 - `TELEGRAM_CHAT_ID` – target chat ID for notifications
 - `BEDBOOKING_ICAL_URL` – BedBooking iCal feed URL
+- `DATABASE_URL` – PostgreSQL connection URL (required in production; optional locally when using Docker Compose)
 
 ## Setup
 
@@ -82,4 +83,14 @@ RuboCop:
 
 ```bash
 docker-compose run --rm test rubocop -a
+```
+
+## Production (Railway)
+
+Set `DATABASE_URL` in Railway environment variables. Rails uses it for the primary database as well as Solid Cache, Solid Queue, and Solid Cable (all share the same PostgreSQL instance).
+
+Run migrations on deploy:
+
+```bash
+bundle exec rails db:prepare
 ```
