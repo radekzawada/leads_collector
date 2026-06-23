@@ -1,6 +1,7 @@
 class Api::LeadsController < ApplicationController
   def create
     result = ProcessLead.call(lead_params)
+
     render json: lead_json(result.lead), status: result.created ? :created : :ok
   end
 
