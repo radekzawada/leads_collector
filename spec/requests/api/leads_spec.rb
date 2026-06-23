@@ -54,6 +54,36 @@ RSpec.describe "POST /api/leads" do
       end
     end
 
+    context "when lead has no dates" do
+      let(:payload) do
+        {
+          source: "facebook",
+          group_name: "Noclegi Karkonosze",
+          post_url: "https://facebook.com/groups/example/posts/no-dates",
+          post_text: "Szukam noclegu w Szklarskiej Porębie",
+          posted_at: "2026-06-23T10:30:00+02:00"
+        }
+      end
+      let(:telegram_stub) do
+        stub_request(:post, "https://api.telegram.org/bottest-token/sendMessage")
+          .to_return(status: 200, body: { ok: true }.to_json)
+      end
+
+      before do
+        allow(AvailabilityChecker).to receive(:call)
+        telegram_stub
+      end
+
+      it "sends a notification without checking availability" do
+        expect(create).to have_http_status(:created)
+        expect(create.parsed_body["is_lead"]).to be(true)
+        expect(create.parsed_body["availability_status"]).to eq("unknown")
+        expect(create.parsed_body["notification_sent_at"]).to be_present
+        expect(AvailabilityChecker).not_to have_received(:call)
+        expect(telegram_stub).to have_been_requested
+      end
+    end
+
     context "when dates are unavailable" do
       let(:telegram_stub) do
         stub_request(:post, %r{https://api\.telegram\.org/bot.*/sendMessage})

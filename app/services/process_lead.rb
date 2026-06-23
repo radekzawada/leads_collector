@@ -61,12 +61,14 @@ class ProcessLead
   end
 
   def check_availability_and_notify(lead)
-    return unless lead.is_lead? && lead.date_from.present? && lead.date_to.present?
+    return unless lead.is_lead?
 
-    status = AvailabilityChecker.call(date_from: lead.date_from, date_to: lead.date_to)
-    lead.update!(availability_status: status.to_s)
+    if lead.date_from.present? && lead.date_to.present?
+      status = AvailabilityChecker.call(date_from: lead.date_from, date_to: lead.date_to)
+      lead.update!(availability_status: status.to_s)
+      return unless status == :available
+    end
 
-    return unless status == :available
     return unless TelegramNotifier.call(lead: lead)
 
     lead.update!(notification_sent_at: Time.current)

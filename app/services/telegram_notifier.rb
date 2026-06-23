@@ -32,10 +32,10 @@ class TelegramNotifier
       🔥 Nowy lead noclegowy
 
       Grupa: #{lead.group_name}
-      Termin: #{lead.date_from} – #{lead.date_to}
-      Osoby: #{lead.guests_total} (#{lead.adults} dorosłych, #{lead.children} dzieci)
+      Termin: #{date_range}
+      Osoby: #{guests_summary}
       Lokalizacja: #{lead.location}
-      Dostępność: ✅ wolne
+      Dostępność: #{availability_label}
 
       Treść:
       #{lead.post_text}
@@ -43,5 +43,23 @@ class TelegramNotifier
       Link:
       #{lead.post_url}
     MESSAGE
+  end
+
+  def date_range
+    return "brak dat" unless lead.date_from.present? && lead.date_to.present?
+
+    "#{lead.date_from} – #{lead.date_to}"
+  end
+
+  def guests_summary
+    return "nieznana" if lead.guests_total.blank?
+
+    "#{lead.guests_total} (#{lead.adults || 0} dorosłych, #{lead.children || 0} dzieci)"
+  end
+
+  def availability_label
+    return "✅ wolne" if lead.availability_status == "available"
+
+    "nie sprawdzono"
   end
 end
