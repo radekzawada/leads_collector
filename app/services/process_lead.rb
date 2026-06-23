@@ -1,6 +1,11 @@
 class ProcessLead
   Result = Struct.new(:lead, :created, keyword_init: true)
 
+  LEAD_ATTRIBUTES = %i[
+    source group_name post_url post_text posted_at
+    is_lead date_from date_to adults children guests_total location confidence
+  ].freeze
+
   def self.call(attributes)
     new(attributes).call
   end
@@ -13,8 +18,7 @@ class ProcessLead
     existing = find_existing
     return result(existing, created: false) if existing
 
-    lead = Lead.create!(raw_attributes)
-    apply_extraction(lead)
+    lead = Lead.create!(lead_attributes)
     check_availability_and_notify(lead)
     result(lead, created: true)
   rescue ActiveRecord::RecordNotUnique
@@ -39,25 +43,8 @@ class ProcessLead
     Result.new(lead: lead, created: created)
   end
 
-  def raw_attributes
-    attributes.slice(:source, :group_name, :post_url, :post_text, :posted_at, :date_from, :date_to)
-  end
-
-  def apply_extraction(lead)
-    extraction = LeadExtractor.call(post_text: lead.post_text)
-    confidence = extraction[:confidence]
-    confidence += 0.25 if attributes[:date_from].present? && attributes[:date_to].present?
-    lead.update!(
-      is_lead: extraction[:is_lead],
-      adults: extraction[:adults],
-      children: extraction[:children],
-      guests_total: extraction[:guests_total],
-      location: extraction[:location],
-      confidence: [ confidence, 1.0 ].min.round(4),
-      raw_extraction: extraction[:raw]
-    )
-  rescue StandardError => e
-    Rails.logger.warn("Lead extraction failed: #{e.message}")
+  def lead_attributes
+    attributes.slice(*LEAD_ATTRIBUTES)
   end
 
   def check_availability_and_notify(lead)

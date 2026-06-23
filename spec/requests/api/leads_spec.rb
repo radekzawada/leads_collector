@@ -11,10 +11,15 @@ RSpec.describe "POST /api/leads" do
       source: "facebook",
       group_name: "Noclegi Karkonosze",
       post_url: "https://facebook.com/groups/example/posts/1",
-      post_text: "Szukam noclegu dla 2+2 od 15 do 18 sierpnia w Szklarskiej Porębie",
+      post_text: "Szukam noclegu dla 2+2 w Szklarskiej Porębie",
       posted_at: "2026-06-23T10:30:00+02:00",
+      is_lead: true,
       date_from: "2026-08-15",
-      date_to: "2026-08-18"
+      date_to: "2026-08-18",
+      adults: 2,
+      children: 2,
+      guests_total: 4,
+      location: "Szklarskiej Porębie"
     }
   end
   let(:request_options) { { params: payload.to_json, headers: headers } }
@@ -38,6 +43,8 @@ RSpec.describe "POST /api/leads" do
           expect(create).to have_http_status(:created)
           expect(create.parsed_body["is_lead"]).to be(true)
           expect(create.parsed_body["availability_status"]).to eq("available")
+          expect(create.parsed_body["adults"]).to eq(2)
+          expect(create.parsed_body["location"]).to eq("Szklarskiej Porębie")
         end
       end
 
@@ -64,8 +71,10 @@ RSpec.describe "POST /api/leads" do
           post_url: "https://facebook.com/groups/example/posts/explicit-dates",
           post_text: "Szukam noclegu w Szklarskiej Porębie",
           posted_at: "2026-06-23T10:30:00+02:00",
+          is_lead: true,
           date_from: "2026-07-07",
-          date_to: "2026-07-10"
+          date_to: "2026-07-10",
+          location: "Szklarskiej Porębie"
         }
       end
 
@@ -85,34 +94,6 @@ RSpec.describe "POST /api/leads" do
       end
     end
 
-    context "when post_text contains dates but request params omit them" do
-      let(:payload) do
-        {
-          source: "facebook",
-          group_name: "Noclegi Karkonosze",
-          post_url: "https://facebook.com/groups/example/posts/text-dates-only",
-          post_text: "Szukam noclegu dla 2+2 od 15 do 18 sierpnia w Szklarskiej Porębie",
-          posted_at: "2026-06-23T10:30:00+02:00"
-        }
-      end
-      let(:telegram_stub) do
-        stub_request(:post, "https://api.telegram.org/bottest-token/sendMessage")
-          .to_return(status: 200, body: { ok: true }.to_json)
-      end
-
-      before do
-        allow(AvailabilityChecker).to receive(:call)
-        telegram_stub
-      end
-
-      it "does not extract dates from post_text" do
-        expect(create).to have_http_status(:created)
-        expect(create.parsed_body["date_from"]).to be_nil
-        expect(create.parsed_body["date_to"]).to be_nil
-        expect(AvailabilityChecker).not_to have_received(:call)
-      end
-    end
-
     context "when lead has no dates" do
       let(:payload) do
         {
@@ -120,7 +101,9 @@ RSpec.describe "POST /api/leads" do
           group_name: "Noclegi Karkonosze",
           post_url: "https://facebook.com/groups/example/posts/no-dates",
           post_text: "Szukam noclegu w Szklarskiej Porębie",
-          posted_at: "2026-06-23T10:30:00+02:00"
+          posted_at: "2026-06-23T10:30:00+02:00",
+          is_lead: true,
+          location: "Szklarskiej Porębie"
         }
       end
       let(:telegram_stub) do
@@ -140,6 +123,32 @@ RSpec.describe "POST /api/leads" do
         expect(create.parsed_body["notification_sent_at"]).to be_present
         expect(AvailabilityChecker).not_to have_received(:call)
         expect(telegram_stub).to have_been_requested
+      end
+    end
+
+    context "when is_lead is false" do
+      let(:payload) do
+        {
+          source: "facebook",
+          group_name: "Noclegi Karkonosze",
+          post_url: "https://facebook.com/groups/example/posts/not-a-lead",
+          post_text: "Piękna pogoda w Karpaczu dzisiaj!",
+          posted_at: "2026-06-23T12:00:00+02:00",
+          is_lead: false
+        }
+      end
+      let(:telegram_stub) do
+        stub_request(:post, %r{https://api\.telegram\.org/bot.*/sendMessage})
+          .to_return(status: 200, body: { ok: true }.to_json)
+      end
+
+      before { telegram_stub }
+
+      it "does not send a notification" do
+        expect(create).to have_http_status(:created)
+        expect(create.parsed_body["is_lead"]).to be(false)
+        expect(create.parsed_body["notification_sent_at"]).to be_nil
+        expect(telegram_stub).not_to have_been_requested
       end
     end
 
