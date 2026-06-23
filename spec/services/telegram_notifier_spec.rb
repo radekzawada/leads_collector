@@ -38,5 +38,24 @@ RSpec.describe TelegramNotifier do
 
       it { expect(call).to be(false) }
     end
+
+    context "when lead has no dates" do
+      let(:lead) { build(:lead, date_from: nil, date_to: nil, guests_total: nil, adults: nil, children: nil, availability_status: "unknown") }
+
+      before do
+        stub_request(:post, "https://api.telegram.org/bot#{token}/sendMessage")
+          .to_return(status: 200, body: { ok: true }.to_json)
+      end
+
+      it "includes missing date and availability labels" do
+        call
+
+        expect(WebMock).to have_requested(:post, "https://api.telegram.org/bot#{token}/sendMessage")
+          .with { |request|
+            text = URI.decode_www_form(request.body).to_h["text"]
+            text.include?("brak dat") && text.include?("nie sprawdzono")
+          }
+      end
+    end
   end
 end
