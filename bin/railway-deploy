@@ -1,0 +1,39 @@
+#!/bin/bash
+set -e
+
+echo "Starting Railway deployment process..."
+
+if [ -z "$DATABASE_URL" ]; then
+  echo "WARNING: DATABASE_URL environment variable is not set"
+fi
+
+echo "Waiting for database connection..."
+MAX_ATTEMPTS=30
+ATTEMPT=0
+while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+  if bundle exec rails db:version > /dev/null 2>&1; then
+    echo "Database connection established"
+    break
+  fi
+
+  ATTEMPT=$((ATTEMPT + 1))
+  if [ $ATTEMPT -eq 1 ]; then
+    echo "Database connection attempt $ATTEMPT/$MAX_ATTEMPTS (showing error on first attempt):"
+    bundle exec rails db:version 2>&1 || true
+  else
+    echo "Database not ready, waiting... (attempt $ATTEMPT/$MAX_ATTEMPTS)"
+  fi
+  sleep 2
+done
+
+if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+  echo "ERROR: Failed to connect to database after $MAX_ATTEMPTS attempts"
+  exit 1
+fi
+
+echo "Preparing database..."
+bundle exec rails db:prepare
+
+echo "Database setup complete"
+echo "Starting Rails server..."
+exec ./bin/start-server

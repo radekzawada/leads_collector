@@ -87,10 +87,24 @@ docker-compose run --rm test rubocop -a
 
 ## Production (Railway)
 
-Set `DATABASE_URL` in Railway environment variables. Rails uses it for the primary database as well as Solid Cache, Solid Queue, and Solid Cable (all share the same PostgreSQL instance).
+Railway auto-detects [`railway.json`](railway.json) and runs `./bin/railway-deploy` on deploy (waits for DB, runs `db:prepare`, starts Puma on `$PORT`).
 
-Run migrations on deploy:
+Set these environment variables in Railway:
+
+- `RAILS_ENV=production`
+- `RAILS_MASTER_KEY`
+- `DATABASE_URL` (usually auto-set when Postgres is linked)
+- `API_KEY`
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+- `BEDBOOKING_ICAL_URL`
+
+Health checks after deploy:
 
 ```bash
-bundle exec rails db:prepare
+curl https://leadscollector-production.up.railway.app/up
+curl -H "X-API-Key: $API_KEY" https://leadscollector-production.up.railway.app/api/health
 ```
+
+- `GET /up` — Rails built-in health check (no auth)
+- `GET /api/health` — app health check (requires `X-API-Key`)
