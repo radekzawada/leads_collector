@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: leads_collector
+      POSTGRES_PASSWORD: leads_collector
+      POSTGRES_DB: leads_collector_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails db:prepare && bundle exec rails server -b 0.0.0.0"
+    volumes:
+      - .:/rails
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      RAILS_ENV: development
+      DATABASE_URL: postgres://leads_collector:leads_collector@db:5432/leads_collector_development
+    depends_on:
+      - db
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: bash -c "bundle exec rails db:prepare && bundle exec rspec"
+    volumes:
+      - .:/rails
+    environment:
+      RAILS_ENV: test
+      DATABASE_URL: postgres://leads_collector:leads_collector@db:5432/leads_collector_test
+      API_KEY: test-api-key
+      TELEGRAM_BOT_TOKEN: test-token
+      TELEGRAM_CHAT_ID: "123456"
+      BEDBOOKING_ICAL_URL: https://example.com/calendar.ics
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
